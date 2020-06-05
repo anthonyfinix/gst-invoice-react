@@ -1,26 +1,56 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import "./App.css";
+import "typeface-roboto";
+import React, { useState, createContext } from "react";
+import { ThemeProvider, createMuiTheme } from "@material-ui/core/styles";
+import CssBaseline from "@material-ui/core/CssBaseline";
+import { getlocalStorageToken } from "./utils/getLocalStrorageToken";
+import Loading from "./utils/welcomeLoadingScreen";
+import { getSingleUserDetails } from "./api";
+import getWindowDimensionsAndState from "./utils/useWindowDimensions";
+import Welcome from './welcome'
 
-function App() {
+export const AppContext = createContext();
+
+const theme = createMuiTheme({
+  palette: {
+    type: "dark",
+  },
+});
+
+export default function App(props) {
+  const [loaded, setloaded] = useState(false);
+  const [userDetails, setUserDetails] = useState(null);
+
+  console.log("app component ran");
+  if (getlocalStorageToken() && userDetails === null) {
+    getSingleUserDetails(getlocalStorageToken()).then((response) => {
+      setUserDetails({ ...response });
+      setloaded(true);
+    });
+  } else if (!loaded) {
+    setloaded(true);
+  }
+  const setUser = (user) => {
+    return new Promise((resolve, reject) => {
+      setUserDetails({ ...user });
+      return resolve(user);
+    });
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <AppContext.Provider
+      value={{
+        appDetails: {
+          user: { ...userDetails },
+          windowDimensions: getWindowDimensionsAndState(),
+        },
+        setUserDetails,
+      }}
+    >
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        {loaded ? <Welcome setUser={setUser} /> : <Loading />}
+      </ThemeProvider>
+    </AppContext.Provider>
   );
 }
-
-export default App;
